@@ -1,15 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 using System.Xml.XPath;
 
 public class SceneLoader : MonoBehaviour
 {
 	public float cameraFrustumLength = 16.0f;
+	private Material cameraFrustumMaterial;
 
 	// Start is called before the first frame update
 	void Start()
 	{
+		cameraFrustumMaterial = (Material)AssetDatabase.LoadAssetAtPath("Assets/CameraFrustumMaterial.mat", typeof(Material));
+
 		XPathDocument doc = new XPathDocument("Assets/Test.xcp");
 
 		foreach (XPathNavigator cam in doc.CreateNavigator().Select("/Cameras/Camera"))
@@ -103,6 +107,7 @@ public class SceneLoader : MonoBehaviour
 				7, 6, 5
 			};
 			obj.GetComponent<MeshFilter>().mesh = mesh;
+			obj.GetComponent<MeshRenderer>().material = cameraFrustumMaterial;
 		}
 	}
 
