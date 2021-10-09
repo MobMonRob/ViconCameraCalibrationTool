@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+
+ 
+
+<Cameras NAME="" VERSION="1.0">
+
+ 
+
+<Camera DEVICEID="17980" NAME="T160_17980" PIXEL_ASPECT_RATIO="1" 
+
+    SENSOR_SIZE="4704 3456" SKEW="0" >
+
+ <KeyFrames>
+
+  <KeyFrame FRAME="0" FOCAL_LENGTH="4570.1" IMAGE_ERROR="0.3" 
+
+      ORIENTATION="0.3 0.9 -0.2 0.1" POSITION="-27.1 33.4 63.1" 
+
+      PRINCIPAL_POINT="2400.4 1711.6" VICON_RADIAL="2.7e-009 -2.0e-016"/>
+
+  <KeyFrame FRAME="11" FOCAL_LENGTH="4570.1" IMAGE_ERROR="0.3" 
+
+      ORIENTATION="0.3 0.9 -0.2 0.1" POSITION="-27.1 33.4 63.1" 
+
+      PRINCIPAL_POINT="2400.4 1711.6" VICON_RADIAL="2.7e-009 -2.0e-016"/>
+
+ </KeyFrames>
+
+</Camera>
+
+ 
+
+<Camera DEVICEID="18912" NAME="T160_18912" PIXEL_ASPECT_RATIO="1" 
+
+   SENSOR_SIZE="4704 3456" SKEW="0">
+
+ <KeyFrames>
+
+  <KeyFrame FOCAL_LENGTH="4563.6" FRAME="0" IMAGE_ERROR="0.35" 
+
+      ORIENTATION="-0.1 0.6 -0.1 0.6" POSITION="72.4 31.3 -24.8" 
+
+      PRINCIPAL_POINT="2381.7 1711.2" VICON_RADIAL="2.7e-009 -2.6e-
+
+     016"/>
+
+  <KeyFrame FRAME="11" FOCAL_LENGTH="4570.1" IMAGE_ERROR="0.3" 
+
+      ORIENTATION="0.3 0.9 -0.2 0.1" POSITION="-27.1 33.4 63.1" 
+
+      PRINCIPAL_POINT="2400.4 1711.6" VICON_RADIAL="2.7e-009 -2.0e-
+
+     016"/>
+
+ </KeyFrames>
+
+</Camera>
+
+ 
+
+</Cameras>
