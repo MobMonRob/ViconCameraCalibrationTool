@@ -7,14 +7,62 @@ using System.Xml.XPath;
 public class SceneLoader : MonoBehaviour
 {
 	public float cameraFrustumLength = 16.0f;
+	public string xcpFilePath = "Assets/Test.xcp";
+
+	private System.DateTime xcpLastWriteTime;
 	private Material cameraFrustumMaterial;
+	private List<GameObject> cameraObjects = new List<GameObject>();
+
+	// Indices used to draw triangles of camera frustum mesh
+	private static readonly int[] cameraFrustumTriangleIndices = {
+		// Bottom
+		0, 1, 3,
+		1, 2, 3,
+		// Front
+		0, 4, 5,
+		0, 5, 1,
+		// Left
+		1, 5, 6,
+		1, 6, 2,
+		// Right
+		3, 7, 4,
+		3, 4, 0,
+		// Back
+		2, 6, 7,
+		2, 7, 3,
+		// Top
+		7, 5, 4,
+		7, 6, 5
+	};
 
 	// Start is called before the first frame update
 	void Start()
 	{
+		xcpLastWriteTime = System.IO.File.GetLastWriteTime(xcpFilePath);
 		cameraFrustumMaterial = (Material)AssetDatabase.LoadAssetAtPath("Assets/CameraFrustumMaterial.mat", typeof(Material));
+		LoadCameraData();
+	}
 
-		XPathDocument doc = new XPathDocument("Assets/Test.xcp");
+	// Update is called once per frame
+	void Update()
+	{
+		System.DateTime fileTime = System.IO.File.GetLastWriteTime(xcpFilePath);
+
+		if (!fileTime.Equals(xcpLastWriteTime))
+		{
+			xcpLastWriteTime = fileTime;
+			LoadCameraData();
+		}
+	}
+
+	void LoadCameraData()
+	{
+		foreach (GameObject o in cameraObjects)
+			Destroy(o);
+
+		cameraObjects.Clear();
+
+		XPathDocument doc = new XPathDocument(xcpFilePath);
 
 		foreach (XPathNavigator cam in doc.CreateNavigator().Select("/Cameras/Camera"))
 		{
@@ -22,7 +70,7 @@ public class SceneLoader : MonoBehaviour
 			var keyframe = cam.SelectSingleNode("./KeyFrames/KeyFrame");
 			var attrib = keyframe.GetAttribute("POSITION", "");
 
-			if(attrib.Length == 0)
+			if (attrib.Length == 0)
 			{
 				Debug.LogError("Missing POSITION attribute");
 				continue;
@@ -30,7 +78,7 @@ public class SceneLoader : MonoBehaviour
 
 			var components = attrib.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
 
-			if(components.Length != 3)
+			if (components.Length != 3)
 			{
 				Debug.LogError("Expected 3 components for position, got " + components.Length);
 				continue;
@@ -86,34 +134,10 @@ public class SceneLoader : MonoBehaviour
 				new Vector3(2.0f, -2.0f, cameraFrustumLength),
 				new Vector3(0.0f, 0.0f, -cameraFrustumLength) // Extra vertex to extend the mesh bounding box so that the origin is at the GameObject's position
 			};
-			mesh.triangles = new[] {
-				// Bottom
-				0, 1, 3,
-				1, 2, 3,
-				// Front
-				0, 4, 5,
-				0, 5, 1,
-				// Left
-				1, 5, 6,
-				1, 6, 2,
-				// Right
-				3, 7, 4,
-				3, 4, 0,
-				// Back
-				2, 6, 7,
-				2, 7, 3,
-				// Top
-				7, 5, 4,
-				7, 6, 5
-			};
+			mesh.triangles = cameraFrustumTriangleIndices;
 			obj.GetComponent<MeshFilter>().mesh = mesh;
 			obj.GetComponent<MeshRenderer>().material = cameraFrustumMaterial;
+			cameraObjects.Add(obj);
 		}
-	}
-
-	// Update is called once per frame
-	void Update()
-	{
-
 	}
 }
