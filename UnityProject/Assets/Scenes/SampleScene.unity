@@ -329,6 +329,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraFrustumLength: 16
+  xcpFilePath: Assets/Test.xcp
+  sensorSizeMillimeters: {x: 18.43, y: 18.43}
 --- !u!4 &1019882353
 Transform:
   m_ObjectHideFlags: 0
