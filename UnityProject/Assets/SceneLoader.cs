@@ -6,12 +6,14 @@ using System.Xml.XPath;
 
 public class SceneLoader : MonoBehaviour
 {
-	public float cameraFrustumLength = 16.0f;
 	public string xcpFilePath = "Assets/Test.xcp";
 
 	private System.DateTime xcpLastWriteTime;
 	private Material cameraFrustumMaterial;
 	private List<GameObject> cameraObjects = new List<GameObject>();
+
+	private float oldCameraFrustumLength = 128.0f; // Used to check if frustum length has changed. Can't use C# properties because unity doesn't show them in the UI
+	public float cameraFrustumLength = 128.0f;
 
 	// The xcp file does not contain the physical sensor size so it needs to be configured manually
 	public Vector2 sensorSizeMillimeters = new Vector2(18.43f, 18.43f); // 14.8x10.9 
@@ -41,6 +43,12 @@ public class SceneLoader : MonoBehaviour
 		{
 			xcpLastWriteTime = fileTime;
 			LoadCameraData();
+		}
+
+		if (cameraFrustumLength != oldCameraFrustumLength)
+		{
+			foreach (GameObject obj in cameraObjects)
+				GenerateCameraFrustumMesh(obj);
 		}
 	}
 
@@ -91,7 +99,7 @@ public class SceneLoader : MonoBehaviour
 
 			if (attrib.Length == 0)
 			{
-				Debug.LogError("Missing POSITION attribute");
+				Debug.LogError("Missing ORIENTATION attribute");
 				continue;
 			}
 
@@ -106,8 +114,8 @@ public class SceneLoader : MonoBehaviour
 			var rot = new Quaternion
 			(
 				float.Parse(components[0]),
-				float.Parse(components[2]),
 				float.Parse(components[1]),
+				float.Parse(components[2]),
 				float.Parse(components[3])
 			);
 
@@ -155,27 +163,39 @@ public class SceneLoader : MonoBehaviour
 
 			camera.usePhysicalProperties = true; // Let unity calcluate fov and frustum based on given focal length
 			camera.focalLength = focalLength;
-			camera.sensorSize = sensorSizeMillimeters;
+			camera.sensorSize = sensorSize;// sensorSizeMillimeters;
 			camera.gateFit = Camera.GateFitMode.None;
+			camera.enabled = false;
 
-			Vector3[] frustumCorners = new Vector3[4];
-			camera.CalculateFrustumCorners(new Rect(0, 0, 1, 1), cameraFrustumLength, Camera.MonoOrStereoscopicEye.Mono, frustumCorners);
+			GenerateCameraFrustumMesh(obj);
 
-
-			var mesh = new Mesh();
-
-			mesh.vertices = new[] {
-				new Vector3(0.0f, 0.0f, 0.0f),
-				frustumCorners[0],
-				frustumCorners[1],
-				frustumCorners[2],
-				frustumCorners[3],
-				new Vector3(0.0f, 0.0f, -cameraFrustumLength) // Extra vertex to extend the mesh bounding box so that the origin is at the GameObject's position
-			};
-			mesh.triangles = cameraFrustumTriangleIndices;
-			obj.GetComponent<MeshFilter>().mesh = mesh;
 			obj.GetComponent<MeshRenderer>().material = cameraFrustumMaterial;
 			cameraObjects.Add(obj);
 		}
+	}
+
+	public void GenerateCameraFrustumMesh(GameObject obj)
+	{
+		var camera = obj.GetComponent<Camera>();
+		var meshFilter = obj.GetComponent<MeshFilter>();
+
+		if (!camera || !meshFilter)
+			return;
+
+		var frustumCorners = new Vector3[4];
+		camera.CalculateFrustumCorners(new Rect(0, 0, 1, 1), cameraFrustumLength, Camera.MonoOrStereoscopicEye.Mono, frustumCorners);
+
+		var mesh = new Mesh();
+
+		mesh.vertices = new[] {
+			new Vector3(0.0f, 0.0f, 0.0f),
+			frustumCorners[0],
+			frustumCorners[1],
+			frustumCorners[2],
+			frustumCorners[3],
+			new Vector3(0.0f, 0.0f, -cameraFrustumLength) // Extra vertex to extend the mesh bounding box so that the origin is at the GameObject's position
+		};
+		mesh.triangles = cameraFrustumTriangleIndices;
+		meshFilter.mesh = mesh;
 	}
 }
