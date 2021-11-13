@@ -93,6 +93,8 @@ public class SceneLoader : MonoBehaviour
 				float.Parse(components[1])
 			);
 
+			pos /= 1000.0f; // Convert to unity's scale where 1 unit = 1 meter
+
 			// Orientation
 
 			attrib = keyframe.GetAttribute("ORIENTATION", "");
