@@ -135,7 +135,10 @@ PlayerSettings:
     16:9: 1
     Others: 1
   bundleVersion: 0.1
-  preloadedAssets: []
+  preloadedAssets:
+  - {fileID: 0}
+  - {fileID: 4952722934493796864, guid: e59cf0645d943404ab3c7aa3e9d7a45e, type: 2}
+  - {fileID: -1560886667248397237, guid: d8075adb8f1ffd24cb62170547c53a15, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -611,11 +614,11 @@ PlayerSettings:
   m_MobileRenderingPath: 1
   metroPackageName: ViconCameraCalibrationTool
   metroPackageVersion: 1.0.0.0
-  metroCertificatePath: 
+  metroCertificatePath: Assets\WSATestCertificate.pfx
   metroCertificatePassword: 
-  metroCertificateSubject: 
-  metroCertificateIssuer: 
-  metroCertificateNotAfter: 0000000000000000
+  metroCertificateSubject: DefaultCompany
+  metroCertificateIssuer: DefaultCompany
+  metroCertificateNotAfter: 00d5b156c80bd901
   metroApplicationDescription: Vicon Camera Calibration Tool
   wsaImages: {}
   metroTileShortName: UnityProject

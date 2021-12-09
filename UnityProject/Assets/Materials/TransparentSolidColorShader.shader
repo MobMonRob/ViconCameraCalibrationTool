@@ -6,6 +6,7 @@ Shader "Unlit/TransparentSolidColorShader" {
 	SubShader{
 		Tags {"Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent"}
 
+		Cull Off
 		ZWrite Off
 		Lighting Off
 		Fog { Mode Off }

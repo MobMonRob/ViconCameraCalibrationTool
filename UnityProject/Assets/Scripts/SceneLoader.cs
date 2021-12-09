@@ -1,22 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 using System.Xml.XPath;
 
 public class SceneLoader : MonoBehaviour
 {
 	public string xcpFilePath = "Assets/Test.xcp";
+	public Material cameraFrustumMaterial;
 
 	private System.DateTime xcpLastWriteTime;
-	private Material cameraFrustumMaterial;
 	private List<GameObject> cameraObjects = new List<GameObject>();
 
-	private float oldCameraFrustumLength = 128.0f; // Used to check if frustum length has changed. Can't use C# properties because unity doesn't show them in the UI
-	public float cameraFrustumLength = 128.0f;
-
-	// The xcp file does not contain the physical sensor size so it needs to be configured manually
-	public Vector2 sensorSizeMillimeters = new Vector2(18.43f, 18.43f); // 14.8x10.9 
+	private float oldCameraFrustumLength = 1.0f; // Used to check if frustum length has changed. Can't use C# properties because unity doesn't show them in the UI
+	public float cameraFrustumLength = 1.0f;
 
 	// Indices used to draw triangles of camera frustum mesh
 	private static readonly int[] cameraFrustumTriangleIndices = {
@@ -30,7 +26,6 @@ public class SceneLoader : MonoBehaviour
 	void Start()
 	{
 		xcpLastWriteTime = System.IO.File.GetLastWriteTime(xcpFilePath);
-		cameraFrustumMaterial = (Material)AssetDatabase.LoadAssetAtPath("Assets/CameraFrustumMaterial.mat", typeof(Material));
 		LoadCameraData();
 	}
 
@@ -89,7 +84,7 @@ public class SceneLoader : MonoBehaviour
 			var pos = new Vector3
 			(
 				float.Parse(components[0]),
-				float.Parse(components[2]), // y and z axes are flipped
+				float.Parse(components[2]), // y and z axes need to be swapped
 				float.Parse(components[1])
 			);
 
@@ -159,13 +154,21 @@ public class SceneLoader : MonoBehaviour
 			var transform = obj.GetComponent<Transform>();
 
 			transform.position = pos;
-			transform.rotation = rot;
+
+			// Swap y and z rotation by converting quaternion to euler and back
+			var euler = rot.eulerAngles;
+			var temp = euler.y;
+			euler.x += 90.0f; // Add 90 degree rotation around x since Unity's cameras face forward if rotation is zero but we need it to face down for correct transformation
+			euler.y = euler.z;
+			euler.z = temp;
+
+			transform.rotation = Quaternion.Euler(euler);
 
 			var camera = obj.GetComponent<Camera>();
 
 			camera.usePhysicalProperties = true; // Let unity calcluate fov and frustum based on given focal length
 			camera.focalLength = focalLength;
-			camera.sensorSize = sensorSize;// sensorSizeMillimeters;
+			camera.sensorSize = sensorSize;
 			camera.gateFit = Camera.GateFitMode.None;
 			camera.enabled = false;
 
@@ -187,17 +190,16 @@ public class SceneLoader : MonoBehaviour
 		var frustumCorners = new Vector3[4];
 		camera.CalculateFrustumCorners(new Rect(0, 0, 1, 1), cameraFrustumLength, Camera.MonoOrStereoscopicEye.Mono, frustumCorners);
 
-		var mesh = new Mesh();
-
-		mesh.vertices = new[] {
-			new Vector3(0.0f, 0.0f, 0.0f),
-			frustumCorners[0],
-			frustumCorners[1],
-			frustumCorners[2],
-			frustumCorners[3],
-			new Vector3(0.0f, 0.0f, -cameraFrustumLength) // Extra vertex to extend the mesh bounding box so that the origin is at the GameObject's position
+		meshFilter.mesh = new Mesh {
+			vertices = new[] {
+				new Vector3(0.0f, 0.0f, 0.0f),
+				frustumCorners[0],
+				frustumCorners[1],
+				frustumCorners[2],
+				frustumCorners[3],
+				new Vector3(0.0f, 0.0f, -cameraFrustumLength) // Extra vertex to extend the mesh bounding box so that the origin is at the GameObject's position
+			},
+			triangles = cameraFrustumTriangleIndices
 		};
-		mesh.triangles = cameraFrustumTriangleIndices;
-		meshFilter.mesh = mesh;
 	}
 }
