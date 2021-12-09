@@ -5,10 +5,9 @@ using System.Xml.XPath;
 
 public class SceneLoader : MonoBehaviour
 {
-	public string xcpFilePath = "Assets/Test.xcp";
+	public TextAsset calibrationData;
 	public Material cameraFrustumMaterial;
 
-	private System.DateTime xcpLastWriteTime;
 	private List<GameObject> cameraObjects = new List<GameObject>();
 
 	private float oldCameraFrustumLength = 1.0f; // Used to check if frustum length has changed. Can't use C# properties because unity doesn't show them in the UI
@@ -25,21 +24,12 @@ public class SceneLoader : MonoBehaviour
 	// Start is called before the first frame update
 	void Start()
 	{
-		xcpLastWriteTime = System.IO.File.GetLastWriteTime(xcpFilePath);
 		LoadCameraData();
 	}
 
 	// Update is called once per frame
 	void Update()
 	{
-		System.DateTime fileTime = System.IO.File.GetLastWriteTime(xcpFilePath);
-
-		if (!fileTime.Equals(xcpLastWriteTime))
-		{
-			xcpLastWriteTime = fileTime;
-			LoadCameraData();
-		}
-
 		if (cameraFrustumLength != oldCameraFrustumLength)
 		{
 			foreach (GameObject obj in cameraObjects)
@@ -56,7 +46,7 @@ public class SceneLoader : MonoBehaviour
 		cameraObjects.Clear();
 
 		// Parse xml file and generate a new camera object for each valid entry
-		var doc = new XPathDocument(xcpFilePath);
+		var doc = new XPathDocument(new System.IO.MemoryStream(calibrationData.bytes));
 
 		foreach (XPathNavigator cam in doc.CreateNavigator().Select("/Cameras/Camera"))
 		{
