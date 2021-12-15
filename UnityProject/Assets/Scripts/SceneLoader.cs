@@ -5,21 +5,32 @@ using System.Xml.XPath;
 
 public class SceneLoader : MonoBehaviour
 {
+	public GameObject originObject;
 	public TextAsset calibrationData;
+	public Material cameraMaterial;
 	public Material cameraFrustumMaterial;
+	public float maxCameraFrustumLength = 4.0f;
 
 	private List<GameObject> cameraObjects = new List<GameObject>();
 
-	private float oldCameraFrustumLength = 1.0f; // Used to check if frustum length has changed. Can't use C# properties because unity doesn't show them in the UI
-	public float cameraFrustumLength = 1.0f;
+	private bool camerasLocked = false;
+	private Vector3 positionOffset;
+	private float yRotationOffset;
 
-	// Indices used to draw triangles of camera frustum mesh
-	private static readonly int[] cameraFrustumTriangleIndices = {
-		0, 1, 2, // Top
-		0, 2, 3, // Right
-		0, 3, 4, // Bottom
-		0, 4, 1  // Left
-	};
+	private bool updateCameraFrustums = false;
+	private float _cameraFrustumLength = 1.0f;
+	public float cameraFrustumLength
+	{
+		get
+		{
+			return _cameraFrustumLength;
+		}
+		set
+		{
+			_cameraFrustumLength = value;
+			updateCameraFrustums = true;
+		}
+	}
 
 	// Start is called before the first frame update
 	void Start()
@@ -30,10 +41,28 @@ public class SceneLoader : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		if (cameraFrustumLength != oldCameraFrustumLength)
+		if (updateCameraFrustums)
 		{
 			foreach (GameObject obj in cameraObjects)
-				GenerateCameraFrustumMesh(obj);
+				obj.GetComponent<ViconCamera>().GenerateCameraFrustumMesh(cameraFrustumLength);
+
+			updateCameraFrustums = false;
+		}
+	}
+
+	private void LateUpdate()
+	{
+		if (camerasLocked)
+		{
+			// Only copy rotation around y axis
+			var eulerRot = Camera.current.transform.rotation.eulerAngles;
+
+			originObject.transform.RotateAround(Camera.current.transform.position, Vector3.up, eulerRot.y - yRotationOffset);
+			yRotationOffset = eulerRot.y;
+
+			var pos = originObject.transform.position;
+			pos = Camera.current.transform.position + positionOffset;
+			originObject.transform.position = pos;
 		}
 	}
 
@@ -106,6 +135,14 @@ public class SceneLoader : MonoBehaviour
 				float.Parse(components[3])
 			);
 
+			// Swap y and z rotation by converting quaternion to euler and back
+			var euler = rot.eulerAngles;
+			var temp = euler.y;
+			euler.x += 90.0f; // Add 90 degree rotation around x since Unity's cameras face forward if rotation is zero but we need it to face down for correct transformation
+			euler.y = euler.z;
+			euler.z = temp;
+			rot = Quaternion.Euler(euler);
+
 			// Sensor size
 
 			attrib = cam.GetAttribute("SENSOR_SIZE", "");
@@ -140,56 +177,22 @@ public class SceneLoader : MonoBehaviour
 
 			// Setup game object
 
-			var obj = new GameObject(cam.GetAttribute("NAME", "") + " (" + cam.GetAttribute("DEVICEID", "") + ")", new[] { typeof(MeshFilter), typeof(MeshRenderer), typeof(Camera) });
-			var transform = obj.GetComponent<Transform>();
+			var obj = ViconCamera.Create(cam.GetAttribute("NAME", "") + " (" + cam.GetAttribute("DEVICEID", "") + ")", pos, rot, cameraMaterial, cameraFrustumMaterial, cameraFrustumLength, focalLength, sensorSize);
 
-			transform.position = pos;
-
-			// Swap y and z rotation by converting quaternion to euler and back
-			var euler = rot.eulerAngles;
-			var temp = euler.y;
-			euler.x += 90.0f; // Add 90 degree rotation around x since Unity's cameras face forward if rotation is zero but we need it to face down for correct transformation
-			euler.y = euler.z;
-			euler.z = temp;
-
-			transform.rotation = Quaternion.Euler(euler);
-
-			var camera = obj.GetComponent<Camera>();
-
-			camera.usePhysicalProperties = true; // Let unity calcluate fov and frustum based on given focal length
-			camera.focalLength = focalLength;
-			camera.sensorSize = sensorSize;
-			camera.gateFit = Camera.GateFitMode.None;
-			camera.enabled = false;
-
-			GenerateCameraFrustumMesh(obj);
-
-			obj.GetComponent<MeshRenderer>().material = cameraFrustumMaterial;
+			obj.transform.parent = originObject.transform;
 			cameraObjects.Add(obj);
 		}
 	}
 
-	public void GenerateCameraFrustumMesh(GameObject obj)
+	public void OnSliderUpdate(Microsoft.MixedReality.Toolkit.UI.SliderEventData data)
 	{
-		var camera = obj.GetComponent<Camera>();
-		var meshFilter = obj.GetComponent<MeshFilter>();
+		cameraFrustumLength = data.NewValue * maxCameraFrustumLength;
+	}
 
-		if (!camera || !meshFilter)
-			return;
-
-		var frustumCorners = new Vector3[4];
-		camera.CalculateFrustumCorners(new Rect(0, 0, 1, 1), cameraFrustumLength, Camera.MonoOrStereoscopicEye.Mono, frustumCorners);
-
-		meshFilter.mesh = new Mesh {
-			vertices = new[] {
-				new Vector3(0.0f, 0.0f, 0.0f),
-				frustumCorners[0],
-				frustumCorners[1],
-				frustumCorners[2],
-				frustumCorners[3],
-				new Vector3(0.0f, 0.0f, -cameraFrustumLength) // Extra vertex to extend the mesh bounding box so that the origin is at the GameObject's position
-			},
-			triangles = cameraFrustumTriangleIndices
-		};
+	public void OnButtonPressed()
+	{
+		camerasLocked = !camerasLocked;
+		positionOffset = originObject.transform.position - Camera.current.transform.position;
+		yRotationOffset = Camera.current.transform.eulerAngles.y;
 	}
 }
